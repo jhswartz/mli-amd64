@@ -20,7 +20,7 @@ Start:
 	48 89 ca				# mov rdx rcx
 	48 f7 d2				# not rdx
 
-	# Replace the NUL terminator wit	h NL.
+	# Replace the NUL terminator with NL.
 	48 ff cf				# dec rdi
 	b0 0a					# mov '\n' al
 	88 07					# mov al (rdi)
