@@ -16,7 +16,7 @@ Echo:
 	# Quit if the next argument is NULL.
 	5e					# pop rsi
 	48 85 f6				# test rsi rsi
-	7e [ rel8 Quit ]			# jz Quit
+	74 [ rel8 Quit ]			# jz Quit
 
 	# Otherwise, print it.
 	e8 [ rel32 PrintString ]		# call PrintString
