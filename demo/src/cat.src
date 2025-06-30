@@ -1,0 +1,102 @@
+[ . x86 ]
+
+Magic:
+	90
+
+Start:
+	# Gather argc and argv[0].
+	59					# pop rcx
+	5f					# pop rdi
+
+	# Process arguments, if any.
+	48 83 f9 01				# cmp 1 rcx
+	75 [ rel8 ProcessArguments ]		# jne ProcessArguments
+
+ReadStandardInput:
+	# Otherwise, act as if - was received.
+	48 8d 3d [ rel32 StandardInput ]	# lea StandardInput(rip) rdi
+	eb [ rel8 ProcessArgument ]		# jmp ProcessArgument
+
+ProcessArguments:
+	# Exit if complete.
+	5f					# pop rdi
+	48 85 ff				# test rdi rdi
+	74 [ rel8 Quit ]			# jz Quit
+
+ProcessArgument:
+	# Open the file, if it's not stdin.
+	66 8b 07				# mov (rdi) ax
+	66 8b 1d [ rel32 StandardInput ]	# mov StandardInput(rip) bx
+	66 39 c3				# cmp ax bx
+	75 [ rel8 OpenFile ]			# jnz OpenFile
+
+	# Otherwise, read a block from stdin.
+	6a 00 5f				# mov STDIN_FILENO rdi
+	eb [ rel8 ReadBlock ]			# jmp ReadBlock
+
+OpenFile:
+	# open(argv[?], O_RDONLY, 0644);
+	48 31 f6				# xor rsi rsi
+	48 c7 c2 a4 01 00 00			# mov 0644 rdx
+	6a 02 58				# mov SYS_OPEN rax
+	0f 05					# syscall
+
+	# Abort on failure.
+	48 85 c0				# test rax rax
+	78 [ rel8 Abort ]			# js Abort
+
+	# Give the descriptor to read(2).
+	48 89 c7				# mov rax rdi
+
+ReadBlock:
+	# read(descriptor, Block, 2048);
+	48 8d 35 [ rel32 Block ]		# lea Block(rip) rsi
+	48 c7 c2 00 08 00 00			# mov 2048 rdx
+	6a 00 58				# mov SYS_READ rax
+	0f 05					# syscall
+
+	# Abort on failure, or continue if EOF is reached.
+	48 85 c0				# test rax rax
+	78 [ rel8 Abort ]			# js Abort
+	74 [ rel8 ProcessArguments ]		# jz ProcessArgumemts
+
+	# Use the return value for write length.
+	48 89 c2				# mov rax rdx
+
+WriteBlock:
+	# Preserve the source descriptor.
+	57					# push rdi
+
+	# write(STDOUT_FILENO, Block, length);
+	6a 01 5f				# mov STDOUT_FILENO rdi
+	6a 01 58				# mov SYS_WRITE rax
+	0f 05					# syscall
+
+	# Restore source descriptor.
+	5f					# pop rdi
+
+	# Abort on failure.
+	48 85 c0				# test rax rax
+	78 [ rel8 Abort ]			# js Abort
+
+	# Continue.
+	eb [ rel8 ReadBlock ]			# jmp ReadBlock
+
+Abort:
+	# Indicate failure.
+	6a 01 5f				# mov EXIT_FAILURE rdi
+	eb [ rel8 Exit ]			# jmp Exit
+
+Quit:
+	# Indicate success.
+	6a 00 5f				# mov EXIT_SUCCESS rdi
+
+Exit:
+	# exit(int status);
+	6a 3c 58				# mov SYS_EXIT rax
+	0f 05					# syscall
+
+StandardInput:
+	2d 00					# "-"
+
+Block:
