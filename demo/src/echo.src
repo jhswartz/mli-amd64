@@ -23,7 +23,7 @@ Echo:
 
 	# Print the separator.
 	6a 01 5a				# mov 1 rdx
-	48 8d 35 [ rel32 Separator ]		# lear Separator rsi
+	48 8d 35 [ rel32 Separator ]		# lea Separator(rip) rsi
 	e8 [ rel32 Print ]			# call Print
 
 	# Continue.
@@ -36,12 +36,12 @@ PrintString:
 	48 31 c9				# xor rcx rcx
 	48 ff c9				# dec rcx
 	f2 ae					# repnz scasb
-	48 89 ca				# mov rdx, rcx
+	48 89 ca				# mov rdx rcx
 	48 f7 d2				# not rdx
 	48 ff ca				# dec rdx
 
 Print:
-	# write(STDOUT_FILENO, buffer, length)
+	# write(STDOUT_FILENO, buffer, length);
 	6a 01 5f				# mov STDOUT_FILENO rdi
 	6a 01 58				# mov SYS_WRITE rax
 	0f 05					# syscall
@@ -50,7 +50,7 @@ Print:
 Quit:
 	# Print the terminator.
 	6a 01 5a				# mov 1 rdx
-	48 8d 35 [ rel32 Terminator ]		# lear Terminator rsi
+	48 8d 35 [ rel32 Terminator ]		# lea Terminator(rip) rsi
 	e8 [ rel32 Print ]			# call Print
 
 	# Exit.

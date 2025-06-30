@@ -2,7 +2,7 @@ Magic:
 	90
 
 Start:
-	# exit(EXIT_SUCCESS)
+	# exit(EXIT_SUCCESS);
 	6a 00 5f			# mov EXIT_SUCCESS rdi
-	6a 3c 58			# mov $SYS_EXIT rax
+	6a 3c 58			# mov SYS_EXIT rax
 	0f 05				# syscall

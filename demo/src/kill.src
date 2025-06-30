@@ -9,7 +9,7 @@ Start:
 	41 59					# pop r9
 
 	# Abort if argc is less than 3.
-	49 83 f9 03				# cmp 3, r8
+	49 83 f9 03				# cmp 3 r8
 	7c [ rel8 Abort ]			# jl Abort
 
 	# Clear signal number and pid registers.
@@ -74,7 +74,7 @@ ParseNumber:
 	eb [ rel8 ParseNextDigit ]		# jmp ParseNextDigit
 
 Kill:
-	# kill(pid, signal)
+	# kill(pid, signal);
 	4c 89 d6				# mov r10 rsi
 	4c 89 df				# mov r11 rdi
 	6a 3e 58				# mov SYS_KILL rax
@@ -84,12 +84,12 @@ Return:
 	c3					# ret
 
 Quit:
-	# exit(EXIT_SUCCESS)
+	# exit(EXIT_SUCCESS);
 	6a 00					# push EXIT_SUCCESS
 	eb [ rel8 Exit ]			# jmp Exit
 
 Abort:
-	# exit(EXIT_FAILURE)
+	# exit(EXIT_FAILURE);
 	6a 01					# push EXIT_FAILURE
 
 Exit:

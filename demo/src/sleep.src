@@ -41,23 +41,23 @@ ParseSeconds:
 
 Sleep:
 	# Chuck the seconds into a request.
-	48 8d 3d [ rel32 Request ]		# lear Request rdi
+	48 8d 3d [ rel32 Request ]		# lea Request(rip) rdi
 	48 89 0f				# mov rcx (rdi)
 
-	# nanosleep(&Request, NULL)
+	# nanosleep(&Request, NULL);
 	48 31 f6				# xor rsi rsi
 	6a 23 58				# mov SYS_NANOSLEEP rax
 	0f 05					# syscall
 
 Quit:
-	6a 00					# push $EXIT_SUCCESS
+	6a 00					# push EXIT_SUCCESS
 	eb [ rel8 Exit ]			# jmp Exit
 
 Abort:
-	6a 01					# push $EXIT_FAILURE
+	6a 01					# push EXIT_FAILURE
 
 Exit:
-	5f					# pop %rdi
+	5f					# pop rdi
 	6a 3c 58				# mov SYS_EXIT rax
 	0f 05					# syscall
 	

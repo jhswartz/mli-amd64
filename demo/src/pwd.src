@@ -7,7 +7,7 @@ Start:
 	66 be 00 08				# mov 2048 si
 	48 29 f4				# sub rsi rsp
 
-	# getcwd(buffer, 2048)
+	# getcwd(buffer, 2048);
 	48 89 e7				# mov rsp, rdi
 	6a 4f 58				# mov SYS_GETCWD rax
 	0f 05					# syscall
@@ -25,7 +25,7 @@ Start:
 	b0 0a					# mov '\n' al
 	88 07					# mov al (rdi)
 
-	# write(STDOUT_FILENO, buffer, strlen(buffer))
+	# write(STDOUT_FILENO, buffer, strlen(buffer));
 	48 89 e6				# mov rsp rsi
 	6a 01 5f				# mov STDOUT_FILENO rdi
 	6a 01 58				# mov SYS_WRITE rax
@@ -34,7 +34,7 @@ Start:
 	# Deallocate the buffer.
 	66 81 c4 00 08				# add 2048 sp
 
-	# exit(EXIT_SUCCESS)
+	# exit(EXIT_SUCCESS);
 	6a 00 5f				# mov EXIT_SUCCESS rdi
 	6a 3c 58				# mov SYS_EXIT rax
 	0f 05					# syscall
