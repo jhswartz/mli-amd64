@@ -75,12 +75,9 @@ WriteBlock:
 	# Restore source descriptor.
 	5f					# pop rdi
 
-	# Abort on failure.
+	# Read another block if write didn't fail.
 	48 85 c0				# test rax rax
-	78 [ rel8 Abort ]			# js Abort
-
-	# Continue.
-	eb [ rel8 ReadBlock ]			# jmp ReadBlock
+	79 [ rel8 ReadBlock ]			# jns ReadBlock 
 
 Abort:
 	# Indicate failure.
