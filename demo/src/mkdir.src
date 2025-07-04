@@ -1,0 +1,34 @@
+[ . x86 ]
+
+Magic:
+	90
+
+Start:
+	# Gather argc and argv[0].
+	59					# pop rcx
+	5f					# pop rdi
+
+	# Abort if argc != 2. 
+	48 83 f9 02				# cmp 2 rcx
+	75 [ rel8 Abort ]			# jnz Abort
+
+	# mkdir(pathname, 0755);
+	5f					# pop rdi
+	48 c7 c6 ed 01 00 00			# mov 0755 rsi
+	6a 53 58				# mov SYS_mkdir rax
+	0f 05					# syscall
+
+	# Abort on failure.
+	48 85 c0				# test rax rax
+	78 [ rel8 ProcessArguments ]		# js Abort
+
+Quit:
+	6a 00 5f				# mov EXIT_SUCCESS rdi
+	eb [ rel8 Exit ]			# jmp Exit
+
+Abort:
+	6a 01 5f				# mov EXIT_FAILURE rdi
+
+Exit:
+	6a 3c 58				# mov SYS_exit rax
+	0f 05					# syscall
