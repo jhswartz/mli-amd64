@@ -1,0 +1,66 @@
+[ . x86 ]
+
+Magic:
+	90
+
+Start:
+	# Gather argc.
+	59				# pop rcx
+
+SkipArguments:
+	# Reached the NULL terminator?
+	48 85 c9			# test rcx rcx
+	74 [ rel8 SkipTerminator ]	# jz SkipTerminator
+	5f				# pop rdi
+	48 ff c9			# dec rcx
+	eb [ rel8 SkipArguments ]	# jmp SkipArguments
+
+SkipTerminator:
+	# Skip the argument vector terminator.
+	5f				# pop rdi
+
+Next:
+	# Grab the next environment variable pointer.
+	5e				# pop rsi
+
+	# Exit if we've reached the NULL terminator.
+	48 85 f6			# test rsi rsi
+	74 [ rel8 Quit ]		# jz Quit
+
+	# Print the variable.
+	e8 [ rel32 PrintString ]	# call PrintString
+
+	# Print a newline.
+	6a 01 5a			# mov 1 rdx
+	48 8d 35 [ rel32 Newline ]	# lea Newline(rip) rsi
+	e8 [ rel32 Print ]		# call Print
+
+	# Loop.
+	eb [ rel8 Next ]		# jmp Next
+
+PrintString:
+	# Calculate string length (strlen).
+	48 89 f7			# mov rsi rdi
+	48 31 c0			# xor rax rax
+	48 31 c9			# xor rcx rcx
+	48 ff c9			# dec rcx
+	f2 ae				# repnz scasb
+	48 89 ca			# mov rdx rcx
+	48 f7 d2			# not rdx
+	48 ff ca			# dec rdx
+
+Print:
+	# write(STDOUT_FILENO, buffer, length);
+	6a 01 5f			# mov STDOUT_FILENO rdi
+	6a 01 58			# mov SYS_WRITE rax
+	0f 05				# syscall
+	c3				# ret
+
+Quit:
+	# exit(EXIT_SUCCESS);
+	6a 00 5f			# mov EXIT_SUCCESS rdi
+	6a 3c 58			# mov SYS_EXIT rax
+	0f 05				# syscall
+
+Newline:
+	0a
