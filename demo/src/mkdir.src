@@ -20,7 +20,7 @@ Start:
 
 	# Abort on failure.
 	48 85 c0				# test rax rax
-	78 [ rel8 ProcessArguments ]		# js Abort
+	78 [ rel8 Abort ]			# js Abort
 
 Quit:
 	6a 00 5f				# mov EXIT_SUCCESS rdi
