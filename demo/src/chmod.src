@@ -1,0 +1,79 @@
+[ . x86 ]
+
+Magic:
+	90
+
+Start:
+	# Gather argc.
+	41 5d				# pop r13
+
+	# Abort if argc < 3.
+	41 83 fd 03			# cmp 3 r13
+	7c [ rel8 Abort ]		# jl Abort
+
+	# Skip argv[0].
+	5f				# pop rdi
+	49 ff cd			# dec r13
+
+ParseMode:
+	# Accept the mode string.
+	5e				# pop rsi
+	49 ff cd			# dec r13
+
+	# Clear the the buffer and accumulator.
+	48 31 c0			# xor rax rax
+	4d 31 e4			# xor r12 r12
+
+NextByte:
+	# Load the next byte of the mode string.
+	ac				# lodsb
+
+	# NUL terminator?
+	84 c0				# test al al
+	74 [ rel8 NextFile ]		# jz NextFile
+
+	# Abort if not an octal digit.
+	3c 30				# cmp '0' al
+	7c [ rel8 Abort ]		# jl Abort
+	3c 37				# cmp '7' al
+	7f [ rel8 Abort ]		# jg Abort
+
+	# Accumulate.
+	49 c1 e4 03			# shl 3 r12
+	2c 30				# sub '0' al
+	49 01 c4			# add rax r12
+
+	# Continue.
+	eb [ rel8 NextByte ]		# jmp NextByte
+
+NextFile:
+	# Quit if there're no files left.
+	4d 85 ed			# test r13 r13
+	74 [ rel8 Quit ]		# jz Quit
+
+	# Grab the next filename.
+	5f				# pop rdi
+	49 ff cd			# dec r13
+
+	# chmod(filename, mode);
+	4c 89 e6			# mov r12 rsi
+	6a 5a 58			# mov SYS_CHMOD rax
+	0f 05				# syscall
+
+	# Abort if we've failed to change the file's mode.
+	48 85 c0			# test rax rax
+	78 [ rel8 Abort ]		# js Abort
+
+	# Loop.
+	eb [ rel8 NextFile ]		# jmp NextFile
+
+Quit:
+	6a 00 5f			# mov EXIT_SUCCESS rdi
+	eb [ rel8 Exit ]		# jmp Exit
+
+Abort:
+	6a 01 5f			# mov EXIT_FAILURE rdi
+
+Exit:
+	6a 3c 58			# mov SYS_EXIT rax
+	0f 05				# syscall
