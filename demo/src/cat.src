@@ -9,7 +9,7 @@ Start:
 	5f					# pop rdi
 
 	# Process arguments, if any.
-	48 83 f9 01				# cmp 1 rcx
+	83 f9 01				# cmp 1 ecx
 	75 [ rel8 ProcessArguments ]		# jne ProcessArguments
 
 ReadStandardInput:
@@ -18,9 +18,9 @@ ReadStandardInput:
 	eb [ rel8 ProcessArgument ]		# jmp ProcessArgument
 
 ProcessArguments:
-	# Exit if complete.
+	# Quit if complete.
 	5f					# pop rdi
-	48 85 ff				# test rdi rdi
+	85 ff					# test edi edi
 	74 [ rel8 Quit ]			# jz Quit
 
 ProcessArgument:
@@ -36,8 +36,8 @@ ProcessArgument:
 
 OpenFile:
 	# open(argv[?], O_RDONLY, 0644);
-	48 31 f6				# xor rsi rsi
-	48 c7 c2 a4 01 00 00			# mov 0644 rdx
+	31 f6					# xor esi esi
+	c7 c2 a4 01 00 00			# mov 0644 edx
 	6a 02 58				# mov SYS_OPEN rax
 	0f 05					# syscall
 
@@ -46,7 +46,7 @@ OpenFile:
 	78 [ rel8 Abort ]			# js Abort
 
 	# Give the descriptor to read(2).
-	48 89 c7				# mov rax rdi
+	89 c7					# mov eax edi
 
 ReadBlock:
 	# read(descriptor, Block, 2048);
@@ -61,7 +61,7 @@ ReadBlock:
 	74 [ rel8 ProcessArguments ]		# jz ProcessArgumemts
 
 	# Use the return value for write length.
-	48 89 c2				# mov rax rdx
+	89 c2					# mov eax edx
 
 WriteBlock:
 	# Preserve the source descriptor.
