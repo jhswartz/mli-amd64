@@ -8,14 +8,9 @@ Start:
 	59					# pop rcx
 	5f					# pop rdi
 
-	# Process arguments, if any.
-	83 f9 01				# cmp 1 ecx
-	75 [ rel8 ProcessArguments ]		# jne ProcessArguments
-
-ReadStandardInput:
-	# Otherwise, act as if - was received.
-	48 8d 3d [ rel32 StandardInput ]	# lea StandardInput(rip) rdi
-	eb [ rel8 ProcessArgument ]		# jmp ProcessArgument
+	# No arguments? Read from stdin.
+	ff c9					# dec ecx
+	74 [ rel8 ReadStandardInput ]		# jz ReadStandardInput
 
 ProcessArguments:
 	# Quit if complete.
@@ -23,21 +18,13 @@ ProcessArguments:
 	85 ff					# test edi edi
 	74 [ rel8 Quit ]			# jz Quit
 
-ProcessArgument:
-	# Open the file, if it's not stdin.
-	66 8b 07				# mov (rdi) ax
-	66 8b 1d [ rel32 StandardInput ]	# mov StandardInput(rip) bx
-	66 39 c3				# cmp ax bx
-	75 [ rel8 OpenFile ]			# jnz OpenFile
-
-	# Otherwise, read a block from stdin.
-	6a 00 5f				# mov STDIN_FILENO rdi
-	eb [ rel8 ReadBlock ]			# jmp ReadBlock
+	# Received "-"?
+	66 81 3f 2d 00				# cmp "-" (%rdi)
+	74 [ rel8 ReadStandardInput ]		# jz ReadStandardInput
 
 OpenFile:
-	# open(argv[?], O_RDONLY, 0644);
+	# open(argv[?], O_RDONLY, ...);
 	31 f6					# xor esi esi
-	c7 c2 a4 01 00 00			# mov 0644 edx
 	6a 02 58				# mov SYS_OPEN rax
 	0f 05					# syscall
 
@@ -46,13 +33,18 @@ OpenFile:
 	78 [ rel8 Abort ]			# js Abort
 
 	# Give the descriptor to read(2).
-	89 c7					# mov eax edi
+	97					# xchg eax edi
+	eb [ rel8 ReadBlock ]			# jmp ReadBlock
+
+ReadStandardInput:
+	# Use STDIN_FILENO.
+	31 ff					# xor edi edi
 
 ReadBlock:
 	# read(descriptor, Block, 2048);
 	48 8d 35 [ rel32 Block ]		# lea Block(rip) rsi
-	48 c7 c2 00 08 00 00			# mov 2048 rdx
-	6a 00 58				# mov SYS_READ rax
+	66 ba 00 08				# mov 2048 dx
+	31 c0					# mov SYS_READ rax
 	0f 05					# syscall
 
 	# Abort on failure, or continue if EOF is reached.
@@ -69,7 +61,7 @@ WriteBlock:
 
 	# write(STDOUT_FILENO, Block, length);
 	6a 01 5f				# mov STDOUT_FILENO rdi
-	6a 01 58				# mov SYS_WRITE rax
+	8b c7					# mov SYS_WRITE rax
 	0f 05					# syscall
 
 	# Restore source descriptor.
@@ -92,8 +84,5 @@ Exit:
 	# exit(int status);
 	6a 3c 58				# mov SYS_EXIT rax
 	0f 05					# syscall
-
-StandardInput:
-	2d 00					# "-"
 
 Block:
