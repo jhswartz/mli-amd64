@@ -6,7 +6,7 @@ Magic:
 Start:
 	# Quit if argc is less than or equal to 1.
 	59					# pop rcx
-	48 83 f9 01				# cmp 1 rcx
+	83 f9 01				# cmp 1 ecx
 	7e [ rel8 Quit ]			# jle Quit
 
 	# Skip argv[0].
@@ -15,7 +15,7 @@ Start:
 Echo:
 	# Quit if the next argument is NULL.
 	5e					# pop rsi
-	48 85 f6				# test rsi rsi
+	85 f6					# test esi esi
 	74 [ rel8 Quit ]			# jz Quit
 
 	# Otherwise, print it.
@@ -32,13 +32,13 @@ Echo:
 PrintString:
 	# Get the length of the string.
 	48 89 f7				# mov rsi rdi
-	48 31 c0				# xor rax rax
-	48 31 c9				# xor rcx rcx
-	48 ff c9				# dec rcx
+	31 c0					# xor eax eax
+	31 c9					# xor ecx ecx
+	ff c9					# dec ecx
 	f2 ae					# repnz scasb
-	48 89 ca				# mov rdx rcx
-	48 f7 d2				# not rdx
-	48 ff ca				# dec rdx
+	89 ca					# mov edx ecx
+	f7 d2					# not edx
+	ff ca					# dec edx
 
 Print:
 	# write(STDOUT_FILENO, buffer, length);
