@@ -4,13 +4,14 @@ Magic:
 	90
 
 Start:
-	# Quit if argc is less than or equal to 1.
+	# Gather argc, and skip argv[0].
 	59					# pop rcx
-	83 f9 01				# cmp 1 ecx
-	7e [ rel8 Quit ]			# jle Quit
-
-	# Skip argv[0].
 	5e					# pop rsi
+	56 5f					# mov rsi rdi
+
+	# Terminate if argc <= 1.
+	83 f9 01				# cmp 1 ecx
+	7e [ rel8 Terminate ]			# jle Terminate
 
 Echo:
 	# Quit if the next argument is NULL.
@@ -18,48 +19,37 @@ Echo:
 	85 f6					# test esi esi
 	74 [ rel8 Quit ]			# jz Quit
 
-	# Otherwise, print it.
-	e8 [ rel32 PrintString ]		# call PrintString
+	# Get the length of the string.
+	56 5f					# mov rsi rdi
+	31 c0					# xor eax eax
+	6a ff 59				# mov -1 rcx
+	f2 ae					# repnz scasb
+	f7 d1					# not ecx
 
-	# Print the separator.
-	6a 01 5a				# mov 1 rdx
-	48 8d 35 [ rel32 Separator ]		# lea Separator(rip) rsi
-	e8 [ rel32 Print ]			# call Print
+Delimit:
+	# Overwrite the NUL terminator with SPACE.
+	48 ff cf				# dec rdi
+	c6 07 20				# mov ' ' (rdi)
+
+	# More arguments to print?
+	39 04 24				# cmp eax (rsp)
+	75 [ rel8 Print ]			# jnz Print
+
+Terminate:
+	# Replace the SPACE with LF instead.
+	c6 07 0a				# mov '\n' (rdi)
+
+Print:
+	# write(STDOUT_FILENO, buffer, length);
+	89 ca					# mov ecx edx
+	6a 01 5f				# mov STDOUT_FILENO rdi
+	8b c7					# mov SYS_WRITE rax
+	0f 05					# syscall
 
 	# Continue.
 	eb [ rel8 Echo ]			# jmp Echo
 
-PrintString:
-	# Get the length of the string.
-	48 89 f7				# mov rsi rdi
-	31 c0					# xor eax eax
-	31 c9					# xor ecx ecx
-	ff c9					# dec ecx
-	f2 ae					# repnz scasb
-	89 ca					# mov edx ecx
-	f7 d2					# not edx
-	ff ca					# dec edx
-
-Print:
-	# write(STDOUT_FILENO, buffer, length);
-	6a 01 5f				# mov STDOUT_FILENO rdi
-	6a 01 58				# mov SYS_WRITE rax
-	0f 05					# syscall
-	c3					# ret
-
 Quit:
-	# Print the terminator.
-	6a 01 5a				# mov 1 rdx
-	48 8d 35 [ rel32 Terminator ]		# lea Terminator(rip) rsi
-	e8 [ rel32 Print ]			# call Print
-
-	# Exit.
-	6a 00 5f				# mov EXIT_SUCCESS rdi
+	31 ff					# mov EXIT_SUCCESS rdi
 	6a 3c 58				# mov SYS_EXIT rax
 	0f 05					# syscall
-
-Separator:
-	20
-
-Terminator:
-	0a
