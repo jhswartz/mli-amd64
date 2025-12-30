@@ -4,21 +4,15 @@ Magic:
 	90
 
 Start:
-	# Gather argc.
-	59				# pop rcx
-
-	# Abort if argc < 2.
-	48 83 f9 02			# cmp 2 rcx
-	7c [ rel8 Abort ]		# jl Abort
-
-	# Skip argv[0].
+	# Gather argc, and skip argv[0].
+	5a				# pop rdx
 	5f				# pop rdi
 
-Unlink:
-	# Decrement argc, and exit if we are done.
-	48 ff c9			# dec rcx
-	74 [ rel8 Quit ]		# jz Quit
+	# Abort if no arguments were supplied.
+	ff ca				# dec edx
+	74 [ rel8 Abort ]		# jz Abort
 
+Unlink:
 	# unlink(filename);
 	5f				# pop rdi
 	6a 57 58			# mov SYS_UNLINK rax
@@ -28,8 +22,9 @@ Unlink:
 	48 85 c0			# test rax rax
 	78 [ rel8 Abort ]		# js Abort
 
-	# Continue.
-	eb [ rel8 Unlink ]		# jmp Unlink
+	# Continue if there're more arguments to process.
+	ff ca				# dec edx
+	75 [ rel8 Unlink ]		# jnz Unlink
 
 Quit:
 	6a 00 5f			# mov EXIT_SUCCESS rdi
