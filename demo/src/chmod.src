@@ -34,7 +34,7 @@ NextByte:
 
 	# Abort if not an octal digit.
 	2c 30				# sub '0' al
-	3c 37				# cmp '7' al
+	3c 07				# cmp 7 al
 	77 [ rel8 Abort ]		# ja Abort
 
 	# Accumulate.
