@@ -1,40 +1,26 @@
+[ . x86 ]
+
 Magic:
 	90
 
 Start:
-	# Allocate 2048 bytes on the stack.
-	48 31 f6				# xor rsi rsi
+	# getcwd(directory, 2048);
+	54 5f					# mov rsp rdi
 	66 be 00 08				# mov 2048 si
-	48 29 f4				# sub rsi rsp
-
-	# getcwd(buffer, 2048);
-	48 89 e7				# mov rsp, rdi
 	6a 4f 58				# mov SYS_GETCWD rax
 	0f 05					# syscall
 
-	# Get the buffered string length.
-	48 31 c0				# xor rax, rax
-	48 31 c9				# xor rcx, rcx
-	48 ff c9				# dec rcx
-	f2 ae					# repnz scasb
-	48 89 ca				# mov rdx rcx
-	48 f7 d2				# not rdx
+	# Replace the NUL terminator with LF.
+	c6 44 07 ff 0a				# mov '\n', (rdi + rax - 1)
 
-	# Replace the NUL terminator with NL.
-	48 ff cf				# dec rdi
-	b0 0a					# mov '\n' al
-	88 07					# mov al (rdi)
-
-	# write(STDOUT_FILENO, buffer, strlen(buffer));
-	48 89 e6				# mov rsp rsi
+	# write(STDOUT_FILENO, directory, strlen(directory));
+	92					# xchg eax edx
+	57 5e					# mov rdi rsi
 	6a 01 5f				# mov STDOUT_FILENO rdi
-	6a 01 58				# mov SYS_WRITE rax
+	57 58					# mov SYS_WRITE rax
 	0f 05					# syscall
 
-	# Deallocate the buffer.
-	66 81 c4 00 08				# add 2048 sp
-
 	# exit(EXIT_SUCCESS);
-	6a 00 5f				# mov EXIT_SUCCESS rdi
-	6a 3c 58				# mov SYS_EXIT rax
+	31 ff					# mov EXIT_SUCCESS rdi
+	b0 3c					# mov SYS_EXIT rax
 	0f 05					# syscall
