@@ -9,12 +9,12 @@ Start:
 	5f					# pop rdi
 
 	# Abort if argc != 2. 
-	48 83 f9 02				# cmp 2 rcx
-	75 [ rel8 Abort ]			# jnz Abort
+	83 f9 02				# cmp 2 ecx
+	75 [ rel8 Abort ]			# jz Abort
 
 	# mkdir(pathname, 0755);
 	5f					# pop rdi
-	48 c7 c6 ed 01 00 00			# mov 0755 rsi
+	be ed 01 00 00				# mov 0755 esi
 	6a 53 58				# mov SYS_mkdir rax
 	0f 05					# syscall
 
