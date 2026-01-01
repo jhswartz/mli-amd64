@@ -4,20 +4,23 @@ Magic:
 	90
 
 Start:
-	# Abort if argc is not 2.
+	# Gather argc and skip argv[0].
 	59					# pop rcx
-	48 83 f9 02				# cmp 2 rcx
+	5e					# pop rsi
+
+	# Abort if argc is not 2.
+	83 f9 02				# cmp 2 ecx
 	75 [ rel8 Abort ]			# jnz Abort
 
-	# Clear the counting registers.
-	48 31 c0				# xor rax rax
-	48 31 c9				# xor rcx rcx
-
-	# Skip argv[0] and parse argv[1].
-	5e					# pop rsi
-	5e					# pop rsi
-
 ParseSeconds:
+	# Clear the buffer (rax) and accumulator (rdx).
+	33 c0					# xor eax eax
+	99					# cdq
+
+	# Parse argv[1].
+	5e					# pop rsi
+
+NextByte:
 	# Read the next character.
 	ac					# lodsb
 
@@ -26,26 +29,22 @@ ParseSeconds:
 	74 [ rel8 Sleep ]			# jz Sleep
 
 	# Abort if it's not a digit.
-	3c 30					# cmp '0' al
-	7c [ rel8 Abort ]			# jl Abort
-	3c 39					# cmp '9' al
-	7f [ rel8 Abort ]			# jg Abort
+	2c 30					# sub '0' al
+	3c 09					# cmp '9' al
+	77 [ rel8 Abort ]			# ja Abort
 
 	# Accumulate.
-	2c 30					# sub 0x30 al
-	48 6b c9 0a				# imul 10 rcx
-	48 01 c1				# add rax rcx
+	6b d2 0a				# imul 10 edx
+	03 d0					# add eax edx
 
 	# Continue.
-	eb [ rel8 ParseSeconds ]		# jmp ParseSeconds
+	eb [ rel8 NextByte ]			# jmp NextByte
 
 Sleep:
-	# Chuck the seconds into a request.
-	48 8d 3d [ rel32 Request ]		# lea Request(rip) rdi
-	48 89 0f				# mov rcx (rdi)
-
-	# nanosleep(&Request, NULL);
-	48 31 f6				# xor rsi rsi
+	# nanosleep({ .tv_sec = seconds, .tv_usec = 0 }, NULL);
+	31 f6					# xor esi esi
+	56 52					# push { seconds 0 }
+	48 89 e7				# mov rsp rdi
 	6a 23 58				# mov SYS_NANOSLEEP rax
 	0f 05					# syscall
 
@@ -60,5 +59,3 @@ Exit:
 	5f					# pop rdi
 	6a 3c 58				# mov SYS_EXIT rax
 	0f 05					# syscall
-	
-Request:
