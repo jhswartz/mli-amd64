@@ -1,68 +1,53 @@
 [ . x86 ]
 
 Start:
-	# Gather and decrement argc.
-	59				# pop rcx
-	48 ff c9			# dec rcx
-	
-	# Abort if argc is now less than 1.
-	48 83 f9 01			# cmp 1 rcx
-	7c [ rel8 Abort ]		# jl Abort
-	
-	# Skip over mli's program name.
-	48 83 c4 08			# add 8, rsp
-	48 8b 3c 24			# mov (rsp) rdi
-	
-	# Stash the argument count on the stack.
-	51				# push rcx
-	
+	# Gather argc and skip argv[0].
+	5a				# pop rdx
+	5f				# pop rdi
+
+	# Abort if no arguments were supplied.
+	ff ca				# dec edx
+	74 [ rel8 Abort ]		# jz Abort
+
 Open:
 	# open(argv[1], O_RDONLY);
-	6a 00				# push O_RDONLY
-	5e				# pop rsi
-	6a 02				# push SYS_OPEN
-	58				# pop rax
+	48 8b 3c 24			# mov argv[1] rdi
+	33 f6				# mov O_RDONLY esi
+	6a 02 58			# mov SYS_OPEN rax
 	0f 05				# syscall
 	
 	# Abort on failure.
-	48 85 c0			# test %rax, %rax
+	48 85 c0			# test rax rax
 	78 [ rel8 Abort ]		# js Abort
 	
-	# Move the descriptor to r8 for mmap(2).
-	49 89 c0			# mov rax r8
-	
-	# Allocate 144 bytes on the stack for a stat structure.
-	66 81 ec 90 00			# sub 144 sp
-	
+	# Preserve the reduced argument count.
+	52				# push rdx
+
+	# Stash the descriptor for mmap(2).
+	50 				# push rax
+
 GetFileSize:
-	# fstat(descriptor, &stat);
-	48 89 e6			# mov rsp, rsi
-	48 89 c7			# mov rax, rdi
-	6a 05				# push SYS_FSTAT
-	58				# pop rax
+	# Borrow 144 bytes from the stack for status.
+	48 8d b4 24 70 ff ff ff		# lea (rsp - 144) rsi
+
+	# fstat(descriptor, &status);
+	50 5f				# mov rax rdi
+	6a 05 58			# mov SYS_FSTAT rax
 	0f 05				# syscall
 	
 	# Abort on failure.
 	48 85 c0			# test rax rax
 	75 [ rel8 Abort ]		# jnz Abort
 	
-	# Obtain the size of the file at offset 48.
-	48 83 c6 30			# add 48 rsi
-	48 8b 36			# mov (rsi) rsi
-	
-	# Deallocate the stack space granted to stat.
-	66 81 c4 90 00			# add 144 sp
-	
 MapFile:
 	# mmap(NULL, size, prot, flags, descriptor, 0);
-	4d 31 c9			# xor r9 r9
-	6a 02				# push MAP_PRIVATE
-	41 5a				# pop r10
-	6a 07				# push PROT_READ|PROT_WRITE|PROT_EXEC
-	5a				# pop rdx
-	48 31 ff			# xor rdi rdi
-	6a 09				# push SYS_MMAP
-	58				# pop rax
+	4d 31 c9			# mov 0 r9
+	41 58				# mov descriptor r8
+	6a 02 41 5a			# mov MAP_PRIVATE r10
+	6a 07 5a			# mov PROT_READ|PROT_WRITE|PROT_EXEC rdx
+	48 8b 76 30			# mov status.st_size rsi
+	31 ff				# mov NULL rdi
+	6a 09 58			# mov SYS_MMAP rax
 	0f 05				# syscall
 	
 	# Abort on failure.
@@ -73,8 +58,6 @@ RunProgram:
 	ff e0				# jmp rax
 
 Abort:
-	6a 01				# push EXIT_FAILURE
-	5f				# pop rdi
-	6a 3c				# push SYS_EXIT
-	58				# pop rax
+	6a 01 5f			# mov EXIT_FAILURE rdi
+	6a 3c 58			# mov SYS_EXIT rax
 	0f 05				# syscall
