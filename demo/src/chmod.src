@@ -38,7 +38,7 @@ NextByte:
 	77 [ rel8 Abort ]		# ja Abort
 
 	# Accumulate.
-	8d 14 d0			# lea edx [rax + rdx * 8]
+	8d 14 d0			# lea [rax + rdx * 8] edx
 
 	# Continue.
 	eb [ rel8 NextByte ]		# jmp NextByte
