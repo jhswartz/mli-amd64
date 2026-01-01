@@ -30,7 +30,7 @@ NextByte:
 
 	# Abort if it's not a digit.
 	2c 30					# sub '0' al
-	3c 09					# cmp '9' al
+	3c 09					# cmp 9 al
 	77 [ rel8 Abort ]			# ja Abort
 
 	# Accumulate.
