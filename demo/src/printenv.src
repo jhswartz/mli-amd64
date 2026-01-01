@@ -5,62 +5,45 @@ Magic:
 
 Start:
 	# Gather argc.
-	59				# pop rcx
+	59					# pop rcx
 
 SkipArguments:
-	# Reached the NULL terminator?
-	48 85 c9			# test rcx rcx
-	74 [ rel8 SkipTerminator ]	# jz SkipTerminator
-	5f				# pop rdi
-	48 ff c9			# dec rcx
-	eb [ rel8 SkipArguments ]	# jmp SkipArguments
+	5f					# pop rdi
+	48 ff c9				# dec rcx
+	75 [ rel8 SkipArguments ]		# jnz SkipArguments
 
-SkipTerminator:
 	# Skip the argument vector terminator.
-	5f				# pop rdi
-
-Next:
-	# Grab the next environment variable pointer.
-	5e				# pop rsi
-
-	# Exit if we've reached the NULL terminator.
-	48 85 f6			# test rsi rsi
-	74 [ rel8 Quit ]		# jz Quit
-
-	# Print the variable.
-	e8 [ rel32 PrintString ]	# call PrintString
-
-	# Print a newline.
-	6a 01 5a			# mov 1 rdx
-	48 8d 35 [ rel32 Newline ]	# lea Newline(rip) rsi
-	e8 [ rel32 Print ]		# call Print
-
-	# Loop.
-	eb [ rel8 Next ]		# jmp Next
-
-PrintString:
-	# Calculate string length (strlen).
-	48 89 f7			# mov rsi rdi
-	48 31 c0			# xor rax rax
-	48 31 c9			# xor rcx rcx
-	48 ff c9			# dec rcx
-	f2 ae				# repnz scasb
-	48 89 ca			# mov rdx rcx
-	48 f7 d2			# not rdx
-	48 ff ca			# dec rdx
+	5f					# pop rdi
 
 Print:
+	# Grab the next environment variable pointer.
+	5e					# pop rsi
+
+	# Exit if we've reached the NULL terminator.
+	48 85 f6				# test rsi rsi
+	74 [ rel8 Quit ]			# jz Quit
+
+	# Get the variable length.
+	56 5f
+	31 c0					# xor eax eax
+	6a ff 59				# mov -1 rcx
+	f2 ae					# repnz scasb
+	f7 d1					# not ecx
+
+	# Overwrite NUL terminator with LF.
+	c6 44 0e ff 0a				# mov '\n' (rsi + rcx - 1)
+
 	# write(STDOUT_FILENO, buffer, length);
-	6a 01 5f			# mov STDOUT_FILENO rdi
-	6a 01 58			# mov SYS_WRITE rax
-	0f 05				# syscall
-	c3				# ret
+	51 5a					# mov rcx rdx
+	6a 01 5f				# mov STDOUT_FILENO rdi
+	57 58					# mov SYS_WRITE rax
+	0f 05					# syscall
+
+	# Loop.
+	eb [ rel8 Print ]			# jmp Print
 
 Quit:
 	# exit(EXIT_SUCCESS);
-	6a 00 5f			# mov EXIT_SUCCESS rdi
-	6a 3c 58			# mov SYS_EXIT rax
-	0f 05				# syscall
-
-Newline:
-	0a
+	6a 00 5f				# mov EXIT_SUCCESS rdi
+	6a 3c 58				# mov SYS_EXIT rax
+	0f 05					# syscall
