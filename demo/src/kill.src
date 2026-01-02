@@ -4,26 +4,22 @@ Magic:
 	90
 
 Start:
-	# Gather argc and argv.
-	41 58					# pop r8
-	41 59					# pop r9
+	# Gather argc and skip argv[0].
+	5d					# pop rbp
+	5e					# pop rsi
 
 	# Abort if argc is less than 3.
-	49 83 f9 03				# cmp 3 r8
+	83 fd 03				# cmp 3 ebp
 	7c [ rel8 Abort ]			# jl Abort
-
-	# Clear signal number and pid registers.
-	4d 31 d2				# xor r10 r10
-	4d 31 db				# xor r11 r11
 
 Parse:
 	# Decrement argc, and exit if it's 0.
-	49 ff c8				# dec r8
+	ff cd					# dec ebp
 	74 [ rel8 Quit ]			# jz Quit
 
-	# Clear the counting registers.
-	48 31 c0				# xor rax rax
-	48 31 c9				# xor rcx rcx
+	# Clear the numeric buffers.
+	31 c0					# xor eax eax
+	99					# cdq
 
 	# Parse the next argument.
 	5e					# pop rsi
@@ -36,7 +32,7 @@ Parse:
 ParseProcessID:
 	# Gather a process identifier.
 	e8 [ rel32 ParseNumber ]		# call ParseNumber
-	49 89 cb				# mov rcx r11
+	89 d3					# mov edx ebx
 
 	# Kill process, and continue parsing.
 	e8 [ rel32 Kill ]			# call Kill
@@ -45,7 +41,7 @@ ParseProcessID:
 ParseSignalNumber:
 	# Gather the signal number.
 	e8 [ rel32 ParseNextDigit ]		# call ParseNextDigit
-	49 89 ca				# mov rcx r10
+	89 d1					# mov edx ecx
 
 	# Continue parsing.
 	eb [ rel8 Parse ]			# jmp Parse
@@ -60,23 +56,21 @@ ParseNumber:
 	74 [ rel8 Return ]			# jz Return
 
 	# Abort if not a digit.
-	3c 30					# cmp '0' al
-	7c [ rel8 Abort ]			# jl Abort
-	3c 39					# cmp '9' al
-	7f [ rel8 Abort ]			# jg Abort
-
-	# Accumulate.
 	2c 30					# sub '0' al
-	48 6b c9 0a				# imul 10 rcx
-	48 01 c1				# add rax rcx
+	3c 09					# cmp 9 al
+	77 [ rel8 Abort ]			# ja Abort
+
+	# Buffer digit.
+	6b d2 0a				# imul 10 edx
+	03 d0					# add eax edx
 
 	# Continue.
 	eb [ rel8 ParseNextDigit ]		# jmp ParseNextDigit
 
 Kill:
 	# kill(pid, signal);
-	4c 89 d6				# mov r10 rsi
-	4c 89 df				# mov r11 rdi
+	89 ce					# mov ecx rsi
+	89 df					# mov ebx edi
 	6a 3e 58				# mov SYS_KILL rax
 	0f 05					# syscall
 
