@@ -1,0 +1,6 @@
+00000000 Start
+00000006 Open
+00000018 GetFileSize
+0000002c MapFile
+00000048 RunProgram
+0000004a Abort
