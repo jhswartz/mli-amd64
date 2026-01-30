@@ -1,0 +1,246 @@
+MLI-AMD64(1)                General Commands Manual               MLI-AMD64(1)
+
+NAME
+       mli-amd64 - Linux/amd64 machine language interpreter
+
+SYNOPSIS
+       mli-amd64 PROGRAM [ARGUMENTS...]
+
+DESCRIPTION
+       mli-amd64  is  a compact interpreter designed to load and execute posi‐
+       tion-independent flat binary executables on the amd64 architecture. Un‐
+       like  standard ELF loaders, mli-amd64 maps the contents of a raw binary
+       file directly into memory with read, write,  and  execute  permissions,
+       and then transfers control to the first byte of the file.
+
+       It  is  intended  to  be  used  in  conjunction with the Linux kernel's
+       binfmt_misc facility, allowing flat binaries (such as  those  generated
+       by  mle(1))  to  be executed directly as if they were standard ELF exe‐
+       cutables.
+
+ARGUMENTS
+       PROGRAM
+              The path to the binary file to execute.
+
+       ARGUMENTS
+              Any subsequent arguments are passed directly to the loaded  pro‐
+              gram. The interpreter manipulates the stack to ensure the target
+              program receives an argc count and argv array  corresponding  to
+              the program's invocation.
+
+CONFIGURATION
+       To  execute flat binaries transparently, mli-amd64 can be registered as
+       a binary format handler. The default configuration associates any  file
+       starting with the 90 (NOP) opcode with the interpreter.
+
+       Registration
+              # mount -t binfmt_misc none /proc/sys/fs/binfmt_misc
+              # echo ':mli-amd64:M:0:\x90::/usr/local/bin/mli-amd64:' \
+                   > /proc/sys/fs/binfmt_misc/register
+
+       Confirmation
+              # cat /proc/sys/fs/binfmt_misc/mli-amd64
+              enabled
+              interpreter /usr/local/bin/mli-amd64
+              flags:
+              offset 0
+              magic 90
+
+       Deregistration
+              # echo -1 > /proc/sys/fs/binfmt_misc/mli-amd64
+
+EXAMPLE
+       The  following  example demonstrates a functional implementation of the
+       printenv utility.
+
+       Preparation
+              $ cd /tmp
+              $ cat > printenv.src << EOF
+              [ . x86 ]
+
+              Magic:
+                      90
+
+              Start:
+                      # Gather argc.
+                      59                              # pop rcx
+
+              SkipArguments:
+                      5f                              # pop rdi
+                      48 ff c9                        # dec rcx
+                      75 [ rel8 SkipArguments ]       # jnz SkipArguments
+
+                      # Skip the argument vector terminator.
+                      5f                              # pop rdi
+
+              Print:
+                      # Grab the next environment variable pointer.
+                      5e                              # pop rsi
+
+                      # Exit if we've reached the NULL terminator.
+                      48 85 f6                        # test rsi rsi
+                      74 [ rel8 Quit ]                # jz Quit
+
+                      # Get the variable length.
+                      56 5f
+                      31 c0                           # xor eax eax
+                      6a ff 59                        # mov -1 rcx
+                      f2 ae                           # repnz scasb
+                      f7 d1                           # not ecx
+
+                      # Overwrite NUL terminator with LF.
+                      c6 44 0e ff 0a                  # mov '0 (rsi + rcx - 1)
+
+                      # write(STDOUT_FILENO, buffer, length);
+                      51 5a                           # mov rcx rdx
+                      6a 01 5f                        # mov STDOUT_FILENO rdi
+                      57 58                           # mov SYS_WRITE rax
+                      0f 05                           # syscall
+
+                      # Loop.
+                      eb [ rel8 Print ]               # jmp Print
+
+              Quit:
+                      # exit(EXIT_SUCCESS);
+                      6a 00 5f                        # mov EXIT_SUCCESS rdi
+                      6a 3c 58                        # mov SYS_EXIT rax
+                      0f 05                           # syscall
+              EOF
+
+              $ mle -o printenv printenv.src
+              $ ls -al printenv
+              -rwxr-xr-x 1 user user 50 Jan 29 15:14 printenv
+
+       Explicit Execution via the mli-amd64 interpreter
+              $ mli-amd64 ./printenv
+              SHELL=/bin/sh
+              PWD=/tmp
+              LOGNAME=user
+              HOME=/home/user
+              TERM=linux
+              USER=user
+              PATH=/usr/sbin:/sbin:/usr/bin:/bin
+              MAIL=/var/mail/user
+              OLDPWD=/home/user
+
+       Transparent Execution (after binfmt_misc registration)
+              $ ./printenv
+              SHELL=/bin/sh
+              PWD=/tmp
+              LOGNAME=user
+              HOME=/home/user
+              TERM=linux
+              USER=user
+              PATH=/usr/sbin:/sbin:/usr/bin:/bin
+              MAIL=/var/mail/user
+              OLDPWD=/home/user
+
+DEBUGGING
+       Debugging mli-amd64 programs involves inspecting the state of  the  in‐
+       terpreter  just  before  it  yields control to the loaded binary. A GDB
+       script is installed with mli-amd64 to automate this process.
+
+       Example Session
+              $ gdb -q --args mli-amd64 ./printenv
+              Reading symbols from mli-amd64...
+              (No debugging symbols found in mli-amd64)
+
+              (gdb) source /usr/local/share/mli-amd64/mli-amd64.gdb
+              Breakpoint 1 at 0x40000848
+
+              (gdb) r
+              Starting program: /usr/local/bin/mli-amd64 ./printenv
+              rax            0x7ffff7ff8000      140737354104832
+              rbx            0x0                 0
+              rcx            0x40000843          1073743939
+              rdx            0x7                 7
+              rsi            0x32                50
+              rdi            0x0                 0
+              rbp            0x0                 0x0
+              rsp            0x7fffffffe1e8      0x7fffffffe1e8
+              r8             0x3                 3
+              r9             0x0                 0
+              r10            0x2                 2
+              r11            0x246               582
+              r12            0x0                 0
+              r13            0x0                 0
+              r14            0x0                 0
+              r15            0x0                 0
+              rip            0x40000848          0x40000848
+              eflags         0x206               [ PF IF ]
+              cs             0x33                51
+              ss             0x2b                43
+              ds             0x0                 0
+              es             0x0                 0
+              fs             0x0                 0
+              gs             0x0                 0
+              0x7fffffffe1e8: 0x0000000000000001      0x00007fffffffe4df
+              0x7fffffffe1f8: 0x0000000000000000      0x00007fffffffe4ea
+              0x7fffffffe208: 0x00007fffffffe4fa      0x00007fffffffe50c
+              0x7fffffffe218: 0x00007fffffffe51f      0x00007fffffffe533
+
+              Breakpoint 1, 0x0000000040000848 in ?? ()
+              1: x/4i $pc
+              => 0x40000848:  jmp    *%rax
+                 0x4000084a:  push   $0x1
+                 0x4000084c:  pop    %rdi
+                 0x4000084d:  push   $0x3c
+
+              (gdb) stepi
+              rax            0x7ffff7ff8000      140737354104832
+              rbx            0x0                 0
+              rcx            0x40000843          1073743939
+              rdx            0x7                 7
+              rsi            0x32                50
+              rdi            0x0                 0
+              rbp            0x0                 0x0
+              rsp            0x7fffffffe1e8      0x7fffffffe1e8
+              r8             0x3                 3
+              r9             0x0                 0
+              r10            0x2                 2
+              r11            0x246               582
+              r12            0x0                 0
+              r13            0x0                 0
+              r14            0x0                 0
+              r15            0x0                 0
+              rip            0x7ffff7ff8000      0x7ffff7ff8000
+              eflags         0x206               [ PF IF ]
+              cs             0x33                51
+              ss             0x2b                43
+              ds             0x0                 0
+              es             0x0                 0
+              fs             0x0                 0
+              gs             0x0                 0
+              0x7fffffffe1e8: 0x0000000000000001      0x00007fffffffe4df
+              0x7fffffffe1f8: 0x0000000000000000      0x00007fffffffe4ea
+              0x7fffffffe208: 0x00007fffffffe4fa      0x00007fffffffe50c
+              0x7fffffffe218: 0x00007fffffffe51f      0x00007fffffffe533
+              0x00007ffff7ff8000 in ?? ()
+              1: x/4i $pc
+              => 0x7ffff7ff8000:      nop
+                 0x7ffff7ff8001:      pop    %rcx
+                 0x7ffff7ff8002:      pop    %rdi
+                 0x7ffff7ff8003:      dec    %rcx
+              (gdb)
+
+FILES
+       /usr/local/bin/mli-amd64
+              The recommended installation location for the  interpreter  exe‐
+              cutable.
+
+       /usr/local/share/mli-amd64/mli-amd64.gdb
+              A  GDB  script  which sets a breakpoint at the handover address,
+              and displays CPU register states, the last 8 stack elements, and
+              the next 4 instructions.
+
+       /proc/sys/fs/binfmt_misc/register
+              The  interface for registering new binary formats with the Linux
+              kernel.
+
+SEE ALSO
+       mle(1), shelf(1)
+
+AUTHOR
+       Justin Swartz <justin.swartz@risingedge.co.za>
+
+MLI-AMD64                        January 2026                     MLI-AMD64(1)
