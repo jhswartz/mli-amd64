@@ -1,0 +1,149 @@
+#!/bin/sh
+
+ARCH="amd64"
+OS="linux"
+
+PROGRAM="mli-${ARCH}"
+
+MLI_SRC_DIR="src"
+MLI_BIN_DIR="bin"
+MLI_DOC_DIR="doc"
+MLI_MISC_DIR="misc"
+
+MLI_SRC="${PROGRAM}.src"
+MLI_MAP="${PROGRAM}.map"
+MLI_OBJ="${PROGRAM}.obj"
+MLI_BIN="${PROGRAM}"
+MLI_GDB="${PROGRAM}.gdb"
+MLI_MAN="${PROGRAM}.1"
+
+PREFIX="${PREFIX:-/usr/local}"
+PREFIX_BIN_DIR="${PREFIX}/bin"
+PREFIX_MAN_DIR="${PREFIX}/share/man/man1"
+PREFIX_SHARE_PROGRAM_DIR="${PREFIX}/share/${PROGRAM}"
+
+PLAN="${PLAN:-${PREFIX}/share/shelf/${ARCH}/${OS}/flat.plan}"
+SHELF="${SHELF:-shelf}"
+MLE="${MLE:-mle}"
+
+set -e
+
+usage()
+{
+	printf "usage: build [clean|install|uninstall]\n"
+}
+
+error()
+{
+	printf "? %s\n" "$1" 1>&2
+}
+
+check_command()
+{
+	command -v "$1" >/dev/null 2>&1
+}
+
+build()
+{
+	if ! check_command "${MLE}"
+	then
+		error "${MLE} not found"
+		return 1
+	fi
+
+	if ! check_command "${SHELF}"
+	then
+		error "${SHELF} not found"
+		return 1
+	fi
+
+	if ! [ -f "${PLAN}" ]
+	then
+		error "${PLAN} not found"
+		return 1
+	fi
+
+	set -x
+
+	"${MLE}" -o "${MLI_SRC_DIR}/${MLI_OBJ}" \
+	         -m "${MLI_SRC_DIR}/${MLI_MAP}" \
+	            "${MLI_SRC_DIR}/${MLI_SRC}"
+
+	"${SHELF}" "${PLAN}" "${MLI_SRC_DIR}/${MLI_OBJ}" \
+	                   > "${MLI_BIN_DIR}/${MLI_BIN}"
+
+	chmod 755 "${MLI_BIN_DIR}/${MLI_BIN}"
+}
+
+clean()
+{
+	set -x
+	rm -f "${MLI_BIN_DIR}/${MLI_BIN}" \
+	      "${MLI_SRC_DIR}/${MLI_OBJ}" \
+	      "${MLI_SRC_DIR}/${MLI_MAP}"
+}
+
+install()
+{
+	if ! [ -f "${MLI_BIN_DIR}/${MLI_BIN}" ]
+	then
+		error "${MLI_BIN_DIR}/${MLI_BIN} not found"
+		return 1
+	fi
+
+	set -x
+
+	mkdir -p "${PREFIX_BIN_DIR}"
+	cp "${MLI_BIN_DIR}/${MLI_BIN}" "${PREFIX_BIN_DIR}/"
+	ln -nsf "${MLI_BIN}" "${PREFIX_BIN_DIR}/mli"
+
+	mkdir -p "${PREFIX_MAN_DIR}"
+	cp "${MLI_DOC_DIR}/${MLI_MAN}" "${PREFIX_MAN_DIR}/"
+
+	mkdir -p "${PREFIX_SHARE_PROGRAM_DIR}"
+	cp "${MLI_MISC_DIR}/${MLI_GDB}" "${PREFIX_SHARE_PROGRAM_DIR}/"
+}
+
+uninstall()
+{
+	set -x
+	rm -f "${PREFIX_BIN_DIR}/${MLI_BIN}" \
+	      "${PREFIX_BIN_DIR}/mli" \
+	      "${PREFIX_MAN_DIR}/${MLI_MAN}"
+	rm -rf "${PREFIX_SHARE_PROGRAM_DIR}"
+}
+
+main()
+{
+	case $# in
+	(0)
+		build
+		;;
+
+	(1)
+		case $1 in
+		("clean")
+			clean
+			;;
+
+		("install")
+			install
+			;;
+
+		("uninstall")
+			uninstall
+			;;
+
+		(*)
+			usage
+			;;
+		esac
+		;;
+
+	(*)
+		usage
+		;;
+	esac
+}
+
+main "$@"
