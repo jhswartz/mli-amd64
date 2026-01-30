@@ -79,7 +79,7 @@ Print:
         74 [ rel8 Quit ]                # jz Quit
 
         # Get the variable length.
-        56 5f
+        56 5f                           # mov rsi rdi
         31 c0                           # xor eax eax
         6a ff 59                        # mov -1 rcx
         f2 ae                           # repnz scasb
@@ -112,7 +112,7 @@ $ ls -al printenv
 .fi
 
 .TP
-.B Explicit Execution via the \fBmli-amd64\fB interpreter
+.B Explicit Execution (via the \fBmli-amd64\fB interpreter)
 .nf
 $ mli-amd64 ./printenv
 SHELL=/bin/sh
@@ -227,8 +227,11 @@ gs             0x0                 0
    0x7ffff7ff8001:      pop    %rcx
    0x7ffff7ff8002:      pop    %rdi
    0x7ffff7ff8003:      dec    %rcx
-(gdb)
 .fi
+
+.TP
+.B Pest Augmentation
+Refer to the \fBshelf\fR(1) manual page for more information about how to use \fBsymbols.plan\fR to generate a separate debug info file from the symbol map file produced by \fBmle\fR during the encoding process.
 
 .SH FILES
 .TP

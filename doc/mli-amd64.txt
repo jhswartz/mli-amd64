@@ -82,7 +82,7 @@ EXAMPLE
                       74 [ rel8 Quit ]                # jz Quit
 
                       # Get the variable length.
-                      56 5f
+                      56 5f                           # mov rsi rdi
                       31 c0                           # xor eax eax
                       6a ff 59                        # mov -1 rcx
                       f2 ae                           # repnz scasb
@@ -113,7 +113,7 @@ EXAMPLE
               $ ls -al printenv
               -rwxr-xr-x 1 user user 50 Jan 29 15:14 printenv
 
-       Explicit Execution via the mli-amd64 interpreter
+       Explicit Execution (via the mli-amd64 interpreter)
               $ mli-amd64 ./printenv
               SHELL=/bin/sh
               PWD=/tmp
@@ -223,7 +223,11 @@ DEBUGGING
                  0x7ffff7ff8001:      pop    %rcx
                  0x7ffff7ff8002:      pop    %rdi
                  0x7ffff7ff8003:      dec    %rcx
-              (gdb)
+
+       Pest Augmentation
+              Refer to the shelf(1) manual page for more information about how
+              to  use symbols.plan to generate a separate debug info file from
+              the symbol map file produced by mle during the encoding process.
 
 FILES
        /usr/local/bin/mli-amd64
