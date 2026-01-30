@@ -40,28 +40,27 @@ error()
 
 check_command()
 {
-	command -v "$1" >/dev/null 2>&1
+	if ! command -v "$1" >/dev/null 2>&1
+	then
+		error "$1 not found"
+		return 1
+	fi
+}
+
+check_file()
+{
+	if ! [ -f "$1" ]
+	then
+		error "$1 not found"
+		return 1
+	fi
 }
 
 build()
 {
-	if ! check_command "${MLE}"
-	then
-		error "${MLE} not found"
-		return 1
-	fi
-
-	if ! check_command "${SHELF}"
-	then
-		error "${SHELF} not found"
-		return 1
-	fi
-
-	if ! [ -f "${PLAN}" ]
-	then
-		error "${PLAN} not found"
-		return 1
-	fi
+	check_command "${MLE}"
+	check_command "${SHELF}"
+	check_file "${PLAN}"
 
 	set -x
 
@@ -78,6 +77,7 @@ build()
 clean()
 {
 	set -x
+
 	rm -f "${MLI_BIN_DIR}/${MLI_BIN}" \
 	      "${MLI_SRC_DIR}/${MLI_OBJ}" \
 	      "${MLI_SRC_DIR}/${MLI_MAP}"
@@ -85,11 +85,7 @@ clean()
 
 install()
 {
-	if ! [ -f "${MLI_BIN_DIR}/${MLI_BIN}" ]
-	then
-		error "${MLI_BIN_DIR}/${MLI_BIN} not found"
-		return 1
-	fi
+	check_file "${MLI_BIN_DIR}/${MLI_BIN}"
 
 	set -x
 
@@ -107,9 +103,11 @@ install()
 uninstall()
 {
 	set -x
+
 	rm -f "${PREFIX_BIN_DIR}/${MLI_BIN}" \
 	      "${PREFIX_BIN_DIR}/mli" \
 	      "${PREFIX_MAN_DIR}/${MLI_MAN}"
+
 	rm -rf "${PREFIX_SHARE_PROGRAM_DIR}"
 }
 
