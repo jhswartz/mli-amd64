@@ -30,7 +30,7 @@ set -e
 
 usage()
 {
-	printf "usage: build [clean|install|uninstall]\n"
+	printf "usage: setup {build|clean|install|uninstall}\n"
 }
 
 error()
@@ -114,12 +114,12 @@ uninstall()
 main()
 {
 	case $# in
-	(0)
-		build
-		;;
-
 	(1)
 		case $1 in
+		("build")
+			build
+			;;
+
 		("clean")
 			clean
 			;;
