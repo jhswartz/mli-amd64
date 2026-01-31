@@ -86,7 +86,7 @@ Print:
         f7 d1                           # not ecx
 
         # Overwrite NUL terminator with LF.
-        c6 44 0e ff 0a                  # mov '\n' (rsi + rcx - 1)
+        c6 44 0e ff 0a                  # mov '\\n' (rsi + rcx - 1)
 
         # write(STDOUT_FILENO, buffer, length);
         51 5a                           # mov rcx rdx
@@ -246,6 +246,7 @@ The interface for registering new binary formats with the Linux kernel.
 
 .SH SEE ALSO
 .BR mle (1),
+.BR mle-x86 (7),
 .BR shelf (1)
 
 .SH AUTHOR
