@@ -95,6 +95,7 @@ install()
 
 	mkdir -p "${PREFIX_MAN_DIR}"
 	cp "${MLI_DOC_DIR}/${MLI_MAN}" "${PREFIX_MAN_DIR}/"
+	ln -nsf "${MLI_MAN}" "${PREFIX_MAN_DIR}/mli.1"
 
 	mkdir -p "${PREFIX_SHARE_PROGRAM_DIR}"
 	cp "${MLI_MISC_DIR}/${MLI_GDB}" "${PREFIX_SHARE_PROGRAM_DIR}/"
@@ -106,7 +107,8 @@ uninstall()
 
 	rm -f "${PREFIX_BIN_DIR}/${MLI_BIN}" \
 	      "${PREFIX_BIN_DIR}/mli" \
-	      "${PREFIX_MAN_DIR}/${MLI_MAN}"
+	      "${PREFIX_MAN_DIR}/${MLI_MAN}" \
+	      "${PREFIX_MAN_DIR}/mli.1"
 
 	rm -rf "${PREFIX_SHARE_PROGRAM_DIR}"
 }
